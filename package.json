@@ -1,0 +1,28 @@
+{
+  "name": "dsh-plugin-intern-modalities",
+  "description": "DSH plugin: map gateway listing modalities (string or object spellings) into the model input cap",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/DF-Guan/dsh-plugin-intern-modalities.git" },
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": { ".": "./src/index.js", "./src/*": "./src/*.js", "./package.json": "./package.json" },
+  "files": ["src/**", "package.json", "README.md", "LICENSE", "cordis.patch.yml"],
+  "engines": { "node": ">=20.0.0", "dsh": ">=0.2.0 <0.3.0" },
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "check": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "dependencies": {
+    "@deepseek-ai/dsh-llm": ">=0.2.0 <1.0.0",
+    "@deepseek-ai/schemastery": ">=0.2.0 <1.0.0",
+    "@deepseek-ai/cordis": ">=0.2.0 <1.0.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/schemastery": "workspace:*"
+  }
+}

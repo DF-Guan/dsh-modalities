@@ -1,0 +1,18 @@
+# The dsh-plugin-intern-modalities bundle patch: registers the adapter for
+# gateway https://docs-declared-endpoints over the load order of the loader.
+#
+# The plugin declaration names the package; the loader imports `src/index.js`
+# and posts `name`, `inject` and `apply` from it. Rows below override the
+# base `modality` row by `id`, restating the keys they own.
+#
+# A working gateway must answer `GET {endpoint}/v1/models` from its own
+# `input_modalities` declaration, and the adapter only needs `apiKey` to call
+# it. The ordering of the row here is chosen so all gateway models arrive
+# with their declared input types before any request settles.
+
+- id: modality-gateway
+  name: dsh-plugin-intern-modalities
+  config:
+    endpoint: 'https://api.example.com/v1'
+    apiKey: !!js process.env.MODALITY_API_KEY
+    providers: [intern-modalities]
