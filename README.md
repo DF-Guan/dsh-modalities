@@ -1,4 +1,4 @@
-# dsh-plugin-intern-modalities
+# dsh-modalities
 
 A DeepSeek Harness plugin that maps a gateway's `input_modalities` declaration into the harness vocabulary.
 
@@ -57,7 +57,7 @@ nothing is still read as unknown, rather than as text-only.
 Add the bundle to your profile:
 
 ```sh
-dsh plugin --profile <name> add github:DF-Guan/dsh-plugin-intern-modalities
+dsh plugin --profile <name> add github:DF-Guan/dsh-modalities
 ```
 
 A git install fetches the source, so the `build` step is skipped by this package's
@@ -68,8 +68,8 @@ A git install fetches the source, so the `build` step is skipped by this package
 The row injects into the profile with these fields:
 
 ```yaml
-- id: dsh-plugin-intern-modalities
-  name: dsh-plugin-intern-modalities
+- id: dsh-modalities
+  name: dsh-modalities
   config:
     endpoint: 'https://api.example.com/v1'
     apiKey: !!js process.env.MODALITY_API_KEY

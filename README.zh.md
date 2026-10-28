@@ -1,4 +1,4 @@
-# dsh-plugin-intern-modalities
+# dsh-modalities
 
 一个 DeepSeek Harness 插件，将端砚网关返回的 `input_modalities` 声明，映射为 DSH 能识别的 `input` 能力。
 
@@ -52,7 +52,7 @@ model "Sage-A1.5" does not declare image input
 在 profile 中添加：
 
 ```sh
-dsh plugin --profile <name> add github:DF-Guan/dsh-plugin-intern-modalities
+dsh plugin --profile <name> add github:DF-Guan/dsh-modalities
 ```
 
 ## 配置
@@ -60,8 +60,8 @@ dsh plugin --profile <name> add github:DF-Guan/dsh-plugin-intern-modalities
 Row 注入 profile 的字段：
 
 ```yaml
-- id: dsh-plugin-intern-modalities
-  name: dsh-plugin-intern-modalities
+- id: dsh-modalities
+  name: dsh-modalities
   config:
     endpoint: 'https://api.example.com/v1'
     apiKey: !!js process.env.MODALITY_API_KEY
