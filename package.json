@@ -1,9 +1,9 @@
 {
-  "name": "dsh-plugin-intern-modalities",
+  "name": "dsh-modalities",
   "description": "DSH plugin: map gateway listing modalities (string or object spellings) into the model input cap",
   "version": "0.1.0",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/DF-Guan/dsh-plugin-intern-modalities.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/DF-Guan/dsh-modalities.git" },
   "type": "module",
   "main": "./src/index.js",
   "exports": { ".": "./src/index.js", "./src/*": "./src/*.js", "./package.json": "./package.json" },
