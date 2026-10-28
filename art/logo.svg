@@ -1,43 +1,7 @@
-<!--
-  dsh-plugin-intern-modalities · brand logo
-  Concept: "Gateway" — the plugin bridges a gateway's raw
-  input modalities into the harness vocabulary.
-  Shape: a mapped arc forming a bracket.
-  Palette: near-black base, electric indigo/violet.
--->
+<!-- dsh-modalities logo - minimal, two-block + bridge mark -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="1024" height="1024">
-  <defs>
-    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#8b5cf6"/>
-    </linearGradient>
-    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#3b82f6"/>
-      <stop offset="100%" stop-color="#6366f1"/>
-    </linearGradient>
-    <linearGradient id="g3" x1="100%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#4f46e5"/>
-    </linearGradient>
-  </defs>
-  <rect width="256" height="256" rx="48" fill="#030305"/>
-  <!-- inner panel -->
-  <rect x="28" y="28" width="200" height="200" rx="24" fill="#0a0a10"/>
-  <!-- left key: source glyph -->
-  <g transform="translate(64, 64)">
-    <rect x="0" y="0" width="48" height="48" rx="12" fill="#14141e"/>
-    <text x="24" y="30" text-anchor="middle" font-size="22" fill="#8b5cf6" font-family="system-ui, -apple-system, sans-serif" font-weight="700">{</text>
-  </g>
-  <!-- right key: target glyph -->
-  <g transform="translate(144, 64)">
-    <rect x="0" y="0" width="48" height="48" rx="12" fill="#14141e"/>
-    <text x="24" y="30" text-anchor="middle" font-size="22" fill="#3b82f6" font-family="system-ui, -apple-system, sans-serif" font-weight="700">→</text>
-  </g>
-  <!-- bridge arc -->
-  <path d="M 112 88 L 144 88" stroke="url(#g1)" stroke-width="8"/>
-  <!-- bottom bar -->
-  <rect x="64" y="140" width="128" height="8" rx="4" fill="#1a1a26"/>
-  <rect x="64" y="160" width="96" height="8" rx="4" fill="#1a1a26"/>
-  <!-- accent dot -->
-  <circle cx="148" cy="140" r="12" fill="url(#g1)"/>
+  <rect width="256" height="256" rx="56" fill="#09090b"/>
+  <rect x="48" y="80" width="64" height="96" rx="12" fill="#3b82f6"/>
+  <rect x="144" y="80" width="64" height="96" rx="12" fill="#8b5cf6"/>
+  <rect x="104" y="116" width="48" height="24" rx="12" fill="#22d3ee"/>
 </svg>
