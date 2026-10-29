@@ -7,7 +7,7 @@
   "type": "module",
   "main": "./src/index.js",
   "exports": { ".": "./src/index.js", "./src/*": "./src/*.js", "./package.json": "./package.json" },
-  "files": ["src/**", "package.json", "README.md", "README.zh-CN.md", "LICENSE", "cordis.patch.yml", "art/logo.svg"],
+  "files": ["src/**", "package.json", "README.md", "README.zh-CN.md", "LICENSE", "cordis.patch.yml", "art/logo.svg", "art/model-list-screenshot.png"],
   "engines": { "node": ">=20.0.0", "dsh": ">=0.2.0 <0.3.0" },
   "publishConfig": { "access": "public" },
   "scripts": {

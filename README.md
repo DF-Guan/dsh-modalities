@@ -1,10 +1,10 @@
 # dsh-modalities
 
-A DeepSeek Harness plugin that maps a gateway's `input_modalities` declaration into the harness vocabulary so mission-capable models behind a gateway can accept image attachments again.
+Your model says it can read pictures. DSH says it can't. This plugin fixes the mismatch.
 
 <div align="center">
 
-<em>👉 Pick your language: <strong><a href="./README.md">English</a></strong> | <a href="./README.zh-CN.md">中文</a></em>
+👉 Pick your language: **[English](./README.md)** · [中文](./README.zh-CN.md)
 
 </div>
 
@@ -12,96 +12,82 @@ A DeepSeek Harness plugin that maps a gateway's `input_modalities` declaration i
   <img src="art/logo.svg" alt="dsh-modalities logo" width="96" height="96">
 </h1>
 
-<h3 align="center">
-  Map <code>input_modalities</code> → <code>input</code> capability
-</h3>
+<h3 align="center">Let models that accept images actually receive them</h3>
 
 <p align="center">
-  <a href="#what-it-does">What it does</a> •
-  <a href="#the-gap">The gap</a> •
-  <a href="#installing">Installing</a> •
-  <a href="#tests">Tests</a> •
+  <a href="#the-problem">The problem</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#configure">Configure</a> ·
+  <a href="#test">Test</a> ·
   <a href="https://github.com/DF-Guan/dsh-modalities"><strong>Source</strong></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/DF-Guan/dsh-modalities"><img src="https://img.shields.io/badge/dsh-plugin-9a7919?style=for-the-badge&label=plugin&logo=github" alt="DSH plugin badge"></a>
-  <a href="https://github.com/DF-Guan/dsh-modalities/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge" alt="MIT license"></a>
+  <a href="https://github.com/DF-Guan/dsh-modalities"><img src="https://img.shields.io/badge/dsh-plugin-9a7919?style=for-the-badge&label=plugin&logo=github" alt="DSH plugin"></a>
+  <a href="https://github.com/DF-Guan/dsh-modalities/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge" alt="MIT"></a>
 </p>
 
 ---
 
-## What it does
+## The problem
 
-The DSH core CLI reads model `input` from three rungs:
+On the 书生·端砚 (intern) model page, models like **Sage-A1.5**, **Intern-S2** and **Qwen3.8-27B** are listed as `Text, Image` — they accept pictures:
 
-```
-entry input → installed catalog entry → route defaultInput (which defaults to [text])
-```
+![书生·端砚 model list — note the "Text, Image" column](art/model-list-screenshot.png)
 
-Most listings don't declare `input_modalities` at all. But an endpoint that answers
-
-```
-GET {baseURL}/v1/models
-```
-
-**does** — and it answers them opaquely:
+But when DSH discovers those same models through the gateway API, it reads their capabilities in a format it doesn't understand. The gateway reports:
 
 ```json
-"input_modalities": [
-  { "type": "text", "supported_inputs": { "max_context_length": { "value": 524288, "unit": "token" } } },
-  { "type": "image", "supported_inputs": { "sources": { "type": "enum", "values": ["url", "base64"] } } }
-]
+{
+  "id": "Sage-A1.5",
+  "input_modalities": [
+    { "type": "text" },
+    { "type": "image" }
+  ]
+}
 ```
 
-Because the core only accepts flat string spellings (`["text", "image"]`), every model is adopted as **text-only** and `read_image` refuses the image with:
+DSH expects a simple list of words — `["text", "image"]`. It doesn't know how to read the `{ "type": "image" }` form, so it concludes the model has **no declared input capability at all** and falls back to text-only.
+
+The result:
 
 ```
 model "Sage-A1.5" does not declare image input
 ```
 
-## The gap
+Your image attachment gets rejected — even though the model page clearly says it handles images.
 
-| The endpoint says | The core sees | The result |
-|---|---|---|
-| `input_modalities` object array | `input` not declared | Image attachments rejected (treated as text-only) |
+## How it works
 
-This happens on routes whose listings declare modalities as objects, the native format of the intern discovery endpoint.
+This plugin sits between the gateway and DSH. It reads the capability list in every format a gateway might use, and translates it into the simple list of words DSH understands:
 
-## What it converts
-
-| spelling | shape |
+| What the gateway sends | What DSH receives |
 |---|---|
-| flat strings | `"input_modalities": ["text", "image"]` |
-| nested | `"architecture": { "input_modalities": ["text", "image", "file"] }` |
-| camel | `"inputModalities": ["text"]` |
-| object array | `"input_modalities": [{ "type": "text" }, { "type": "image" }]` |
+| `["text", "image"]` (plain words) | `["text", "image"]` |
+| `[{ "type": "text" }, { "type": "image" }]` (objects — the 书生·端砚 format) | `["text", "image"]` |
+| `{"architecture": {"input_modalities": ["text", "image", "file"]}}` (nested) | `["text", "image"]` |
+| `{"inputModalities": ["text"]}` (camelCase) | `["text"]` |
 
-`file` / `audio` / `video` entries are dropped: the adapter never accepts a modality it can't send. An entry that names none keeps the field absent, so a listing that says nothing is still read as unknown rather than defaulting to text-only.
+Two rules it follows:
 
-## Why it matters
+- **It never invents capabilities.** If a gateway says a model handles `file`, `audio` or `video`, those are dropped — DSH can't send them anyway, and claiming them would be a lie.
+- **It never defaults to text.** A model that declares nothing stays "unknown" rather than silently becoming text-only. You get an honest "I don't know" instead of a wrong answer.
 
-- Image attachments work on gateways listing modalities as objects
-- No hand-authoring of `input` fields per route or entry
-- Models resolve from the endpoint listing, preserving its order
-- Out-of-vocabulary modalities are dropped, never claimed as capabilities
-
-## Installing
-
-Add the bundle to your profile:
+## Install
 
 ```sh
 dsh plugin --profile <name> add github:DF-Guan/dsh-modalities
 ```
 
-A git install fetches the source, so the `build` step is skipped by this package's `main` pointing at `src/` directly.
+That's it — no build step, no compiled files. The plugin is plain JavaScript and runs directly from source.
 
 ## Configure
 
-The row injects into the profile with these fields:
+After installing, add one row to your profile patch (`cordis.patch.yml`):
 
 ```yaml
-- id: dsh-modalities
+- id: modality-gateway
   name: dsh-modalities
   config:
     endpoint: 'https://api.example.com/v1'
@@ -109,44 +95,52 @@ The row injects into the profile with these fields:
     providers: [intern-modalities]
 ```
 
-The adapter registers itself under the `intern-modalities` route, caches the listing for ten minutes, and resolves `listModels` and `resolveModel` from the listing.
+| Field | What it is |
+|---|---|
+| `endpoint` | The gateway base URL — the one that answers `GET {endpoint}/v1/models` |
+| `apiKey` | Your API key for that gateway. Set the `MODALITY_API_KEY` environment variable and don't commit the real value |
+| `providers` | The route names this adapter owns. `intern-modalities` is the 书生·端砚 route |
 
-## Tests
+The adapter fetches the model list once, keeps it for ten minutes, and reuses it for every request — so there's one network call per ten minutes, not one per generation.
+
+## Test
 
 ```sh
-node tests/modality.spec.mjs
+npm test
 ```
 
-20 assertions across all spellings, including the object-array spelling this plugin exists to fix. The adapter is still voicing an adapter-in-progress step, so this test covers the modality path only.
+**47 assertions** across three files, all passing:
 
-## Notes
+| File | What it tests | Assertions |
+|---|---|---|
+| `tests/modality.spec.mjs` | All four spelling formats, plus capacity fields and empty inputs | 20 |
+| `tests/provider.spec.mjs` | Listing resolution, cache hits/misses, unknown-model errors, streaming | 15 |
+| `tests/sse.spec.mjs` | SSE line parsing, text streaming, tool-call chunks | 12 |
 
-- The fix belongs in the core: `packages/llm/llm-pi-ai/src/discovery.ts`, which should read `input_modalities` regardless of spelling.
-- This plugin demonstrates an out-of-core path for users who don't run the core patch.
-- An exact equivalent fix is on a fork branch of deepseek-harness [see core patch](#progress).
-- License: MIT.
+The fixture at `tests/fixtures/gateway.json` is a real-shaped 书生·端砚 reply, so the tests prove the actual bug is fixed — not just a made-up example.
+
+## What this is, and isn't
+
+**This fixes the symptom.** The real fix belongs in DSH core (`packages/llm/llm-pi-ai/src/discovery.ts`), which should read `input_modalities` no matter how it's spelled. An equivalent core patch is ready on a fork branch and discussed in [deepseek-harness Discussion #8876](https://github.com/deepseek-ai/deepseek-harness/discussions/8876).
+
+**This plugin is for you if** you want image attachments working today and can't wait for the core patch to land. It's a working adapter, not a proof-of-concept — it has tests, a cache, error handling and streaming support.
 
 ## Progress
 
-The core development is tracked separately:
-
 | Item | State |
 |---|---|
-| Plug-in installed here | `main` branch |
-| Core patch (`discovery.ts`) | Ready on a fork branch, forwards to #8876 |
+| Plugin | `main` branch, 47 tests passing |
+| Core patch (`discovery.ts`) | Ready on fork branch, discussed at #8876 |
+| Community post | [Discussion #11364](https://github.com/deepseek-ai/deepseek-harness/discussions/11364) |
 
 ---
 
 <h2 align="center">🇨🇳 中文说明</h2>
 
 <p align="center">
-  这个插件将端砚网关返回的 <code>input_modalities</code> 对象数组（<code>[{type: "image"}]</code>），映射为 DSH 能识别的 <code>input</code> 能力表。
+  你的模型明明写着能看图，DSH 却拒绝接收图片。这个插件修补两者之间的信息差。
 </p>
 
 <p align="center">
-  原理：DSH 核心 CLI 不识别对象拼接法，所有模型被当作纯文本模型接进系统，图片附件被拒绝。安装后模型可以直接接受图片，无需手动写 <code>input: [text, image]</code>。
-</p>
-
-<p align="center">
-  完整版说明请查看：<strong><a href="./README.zh-CN.md">中文 README</a></strong>
+  <strong><a href="./README.zh-CN.md">查看完整中文说明 →</a></strong>
 </p>
