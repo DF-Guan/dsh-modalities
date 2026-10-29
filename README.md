@@ -41,7 +41,7 @@ That screenshot is the page you'd see. The table is evidence, not decoration: th
 
 ## The gap
 
-When DSH discovers those same models through the gateway API, the reply it gets looks like this. This is a real recorded response from the 书生·端砚 discovery endpoint — the file lives in my workspace at `_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json` (287 lines, 3 models). It is a trimmed excerpt of a larger reply that named 13 models; I kept three rows so the fixture stays small, and `Sage-A1.5` is one of them:
+When DSH discovers those same models through the gateway API, the reply it gets looks like this. This is a real recorded response from the 书生·端砚 discovery endpoint — the file lives in my workspace at `_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json` (287 lines, 3 models). It is a trimmed excerpt of a larger reply; I kept three rows so the fixture stays small, and `Sage-A1.5` is one of them. (The original reply named 13 models — that figure comes from the discussion thread that first reported this gap, not from a file I still have, since I trimmed the source down to these three rows.)
 
 ```json
 {

@@ -41,7 +41,7 @@
 
 ## 缺口在哪
 
-当 DSH 通过网关 API 发现这些模型时，它拿到的回包长这样。这是书生·端砚发现接口的真实记录回包（我的 workspace 里 `_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json`，287 行，3 个模型）：
+当 DSH 通过网关 API 发现这些模型时，它拿到的回包长这样。这是书生·端砚发现接口的真实记录回包（我的 workspace 里 `_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json`，287 行，3 个模型）。这是从一个更大的回包里裁剪出来的——我保留了三个模型，让测试数据保持小巧，`Sage-A1.5` 就在其中。（原始回包里有 13 个模型；这个数字来自最早报告这个缺口的讨论串，不是我手里还留着的文件，因为我把源文件裁剪成这三个了。）
 
 ```json
 {
