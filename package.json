@@ -11,9 +11,9 @@
   "engines": { "node": ">=20.0.0", "dsh": ">=0.2.0 <0.3.0" },
   "publishConfig": { "access": "public" },
   "scripts": {
-    "test": "node tests/run.mjs",
-    "check": "tsc --noEmit",
-    "build": "tsc -p tsconfig.json"
+    "test": "node tests/modality.spec.mjs && node tests/provider.spec.mjs && node tests/sse.spec.mjs",
+    "check": "node scripts/check-manifest.mjs",
+    "lint": "node --check src/index.js src/modality.js src/provider.js src/sse.js"
   },
   "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
   "dependencies": {

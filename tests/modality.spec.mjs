@@ -60,4 +60,4 @@ run(() => {
   ok(JSON.stringify(capacityModels[0].inputModalities) === '["text","image"]', 'row modalities')
 })
 
-process.exitCode = flush()
+process.exitCode = await flush()

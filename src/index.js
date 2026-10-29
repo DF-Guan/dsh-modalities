@@ -3,7 +3,7 @@
  * the plugin configuration, and resolves the loader's injected session
  * services (`llm`, `cordis`).
  *
- * The adapter is applied as the row `dsh-plugin-intern-modalities` gets
+ * The adapter is applied as the row `dsh-modalities` gets
  * loaded; users override the configuration of the row in their profile patch.
  *
  * Plugin contract: `name`, `inject`, `apply(ctx, config)`.
@@ -11,19 +11,16 @@
 
 import { ModalitiesAdapter } from './provider.js'
 
-export const name = 'dsh-plugin-intern-modalities'
+export const name = 'dsh-modalities'
 export const inject = ['llm']
 export const entry = 'apply'
 
-/** Plugin configuration: one gateway to drive, one provider route to own. */
-export interface Config {
-  /** Gateway endpoint that answers `GET {endpoint}/v1/models`. */
-  endpoint: string
-  /** API key passed to the gateway in every request. */
-  apiKey: string
-  /** Provider routes this adapter owns. */
-  providers: string[]
-}
+/** Plugin configuration: one gateway to drive, one provider route to own.
+ * @typedef {Object} Config
+ * @property {string} Config.endpoint - Gateway endpoint that answers `GET {endpoint}/v1/models`.
+ * @property {string} Config.apiKey - API key passed to the gateway in every request.
+ * @property {string[]} Config.providers - Provider routes this adapter owns.
+ */
 
 /**
  * Validate the configuration the cordis loader passes at load time.

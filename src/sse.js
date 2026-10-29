@@ -7,7 +7,7 @@
  */
 
 /** One SSE data line emitted by the generator. */
-export function* sseLines(response) {
+export async function* sseLines(response) {
   const reader = response.body.getReader()
   /** @type {string} */
   let buffer = ''
@@ -39,14 +39,16 @@ export function eventOf(line) {
 }
 
 /** Translate an OpenAI-compatible SSE stream into harness chunks. */
-export function* translateSse(response, signal) {
+export async function* translateSse(response, signal) {
   let index = 0
   /** @type {string} */
   let collectedText = ''
   /** @type {Array<unknown>} */
   const toolCalls = []
-  for (const line of sseLines(response)) {
-    if (signal !== undefined && signal.aborted) throw new Error('aborted')
+  /** Whether a text block is open for the current `index`. */
+  let textOpen = false
+  for await (const line of sseLines(response)) {
+    if (signal !== null && signal !== undefined && signal.aborted) throw new Error('aborted')
     const payload = eventOf(line)
     if (payload === null || payload.choices === undefined || payload.choices.length === 0) continue
     const choice = payload.choices[0]
@@ -54,28 +56,31 @@ export function* translateSse(response, signal) {
     const content = delta.content
 
     if (content !== undefined && content !== null) {
-      yield { type: 'block-start', index, blockType: 'text' }
-      yield { type: 'text-delta', index, text: content }
+      if (!textOpen) {
+        yield { type: 'block-start', index, blockType: 'text' }
+        textOpen = true
+      }
+      yield { type: 'text-delta', index, text: String(content) }
       collectedText += content
-      yield { type: 'block-end', index, block: { type: 'text', text: collectedText } }
     }
     if (delta.tool_calls !== undefined && delta.tool_calls !== null) {
-      const toolBlocks = delta.tool_calls
-      toolBlocks.forEach((t, i) => {
+      for (const t of delta.tool_calls) {
         const id = t.id ?? brand()
         yield { type: 'block-start', index, blockType: 'tool-call' }
         yield { type: 'tool-call-delta', index: index, id, name: t.function?.name ?? '', argumentsDelta: t.function?.arguments ?? '' }
         yield { type: 'block-end', index, block: { type: 'tool-call', id, name: t.function?.name ?? '', arguments: t.function?.arguments ?? '' } }
-      })
+      }
     }
     const usage = payload.usage
     if (usage !== undefined) yield { type: 'usage', usage }
     const finish = payload.finish_reason
     if (finish !== undefined) {
+      if (textOpen) yield { type: 'block-end', index, block: { type: 'text', text: collectedText } }
       yield { type: 'finish', reason: { kind: finish } }
       return
     }
   }
+  if (textOpen) yield { type: 'block-end', index, block: { type: 'text', text: collectedText } }
   yield { type: 'finish', reason: { kind: 'stop' } }
 }
 

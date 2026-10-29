@@ -10,32 +10,30 @@ import { attributionHeaders } from '@deepseek-ai/dsh-llm'
 import { recordModels, modalitiesOf } from './modality.js'
 import { translateSse } from './sse.js'
 
-/** One cached gateway listing. */
-interface CachedListing {
-  /** Timestamp the listing was cached at, in milliseconds. */
-  cachedAt: number
-  /** The discovered models, open to the plugin's own resolution. */
-  models: readonly unknown[]
-}
-
 /** How long a gateway listing stays authoritative in this adapter. */
 const LISTING_TTL_MS = 10 * 60 * 1000
 
 export class ModalitiesAdapter extends LlmAdapter {
-  private readonly listing: CachedListing | null
-  private readonly endpoint: string
-  private readonly apiKey: string
+  /** Cached gateway listing, empty until first resolution. */
+  #listing = null
 
-  constructor({ endpoint, apiKey }: { endpoint: string; apiKey: string }) {
+  /** The raw endpoint without trailing slashes. */
+  #endpoint
+  /** API key passed to the gateway in every request. */
+  #apiKey
+
+  constructor({ endpoint, apiKey }) {
     super()
-    this.endpoint = endpoint.replace(/\/+$/, '')
-    this.apiKey = apiKey
-    this.listing = null
+    this.#endpoint = endpoint.replace(/\/+$/, '')
+    this.#apiKey = apiKey
   }
 
-  override providerInfo(provider) { return { id: provider, name: 'Modality' } }
+  providerInfo(provider) { return { id: provider, name: 'Modality' } }
 
-  private async requestBody(options) {
+  /** Invalidate the cached listing, forcing a refetch. */
+  resetCache() { this.#listing = null }
+
+  async requestBody(options) {
     const body = {
       model: options.model,
       messages: options.messages,
@@ -55,12 +53,12 @@ export class ModalitiesAdapter extends LlmAdapter {
    */
   async * stream(options) {
     const requestBody = await this.requestBody(options)
-    const response = await fetch(`${this.endpoint}/v1/chat/completions`, {
+    const response = await fetch(`${this.#endpoint}/v1/chat/completions`, {
       method: 'POST',
       signal: options.signal,
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${this.apiKey}`,
+        authorization: `Bearer ${this.#apiKey}`,
         ...attributionHeaders(),
       },
       body: requestBody,
@@ -101,15 +99,17 @@ export class ModalitiesAdapter extends LlmAdapter {
     return found
   }
 
-  private async models() {
-    const response = await fetch(`${this.endpoint}/v1/models`, {
-      headers: { authorization: `Bearer ${this.apiKey}`, accept: 'application/json', ...attributionHeaders() },
+  async models() {
+    const cached = this.#listing
+    if (cached && Date.now() - cached.cachedAt < LISTING_TTL_MS) return cached.models
+
+    const response = await fetch(`${this.#endpoint}/v1/models`, {
+      headers: { authorization: `Bearer ${this.#apiKey}`, accept: 'application/json', ...attributionHeaders() },
     })
     if (!response.ok) throw new LlmError(`Adapter error: ${response.status}`, 'PROVIDER_HTTP_ERROR', { status: response.status })
     const body = await response.json()
-    return recordModels(body)
+    const models = recordModels(body)
+    this.#listing = { cachedAt: Date.now(), models }
+    return models
   }
 }
-
-/** The adapter exports RequestMessage; the plugin agreement. */
-

@@ -20,13 +20,6 @@
 const LISTED_MODALITIES = ['text', 'image']
 
 /**
- * One entry of a declared `input_modalities` array. Endpoints spell the same
- * list two ways — a bare modality name, or an object naming it under `type`.
- */
-const isText = { text: true }
-const isImage = { image: true }
-
-/**
  * One candidate modality list as this build's vocabulary, in the order the
  * endpoint declares it, or `undefined` when it names nothing this build sends.
  * Values outside the vocabulary are dropped rather than reported: a modality
@@ -102,15 +95,4 @@ export function recordModels(body) {
     })
   }
   return mapped
-}
-
-/** Top-level listing replies carry either `data` or a `models` map. */
-export const LISTING_KEYS = ['data', 'models']
-
-/**
- * OpenRouter nests modality lists under its own `architecture` key, and the
- * deep flat spelling stays bare: both spellings are accepted here.
- */
-export function openRouterModalities(entry) {
-  return modalitiesOf(entry)
 }
