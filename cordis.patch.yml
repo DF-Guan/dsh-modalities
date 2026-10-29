@@ -14,5 +14,5 @@
   name: dsh-modalities
   config:
     endpoint: 'https://api.example.com/v1'
-    apiKey: !!js process.env.MODALITY_API_KEY
+    apiKey: '${MODALITY_API_KEY}'
     providers: [intern-modalities]

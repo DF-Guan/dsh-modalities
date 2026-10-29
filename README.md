@@ -41,7 +41,7 @@ That screenshot is the page you'd see. The table is evidence, not decoration: th
 
 ## The gap
 
-When DSH discovers those same models through the gateway API, the reply it gets looks like this. This is a real recorded response from the 书生·端砚 discovery endpoint (`_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json`, 287 lines, 13 models):
+When DSH discovers those same models through the gateway API, the reply it gets looks like this. This is a real recorded response from the 书生·端砚 discovery endpoint — the file lives in my workspace at `_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json` (287 lines, 3 models). It is a trimmed excerpt of a larger reply that named 13 models; I kept three rows so the fixture stays small, and `Sage-A1.5` is one of them:
 
 ```json
 {
@@ -97,14 +97,14 @@ After installing, add one row to your profile patch (`cordis.patch.yml`):
   name: dsh-modalities
   config:
     endpoint: 'https://api.example.com/v1'
-    apiKey: !!js process.env.MODALITY_API_KEY
+    apiKey: '${MODALITY_API_KEY}'
     providers: [intern-modalities]
 ```
 
 | Field | What it is |
 |---|---|
 | `endpoint` | The gateway base URL — the one that answers `GET {endpoint}/v1/models` |
-| `apiKey` | Your API key for that gateway. Set the `MODALITY_API_KEY` environment variable and don't commit the real value |
+| `apiKey` | Your API key for that gateway. Set the `MODALITY_API_KEY` environment variable and reference it from there; don't commit the real value |
 | `providers` | The route names this adapter owns. `intern-modalities` is the 书生·端砚 route |
 
 The adapter fetches the model list once, keeps it for ten minutes, and reuses it for every request — so there's one network call per ten minutes, not one per generation.

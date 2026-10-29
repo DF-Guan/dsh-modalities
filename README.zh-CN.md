@@ -41,7 +41,7 @@
 
 ## 缺口在哪
 
-当 DSH 通过网关 API 发现这些模型时，它拿到的回包长这样。这是书生·端砚发现接口的真实记录回包（`_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json`，287 行，13 个模型）：
+当 DSH 通过网关 API 发现这些模型时，它拿到的回包长这样。这是书生·端砚发现接口的真实记录回包（我的 workspace 里 `_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json`，287 行，3 个模型）：
 
 ```json
 {
@@ -97,14 +97,14 @@ dsh plugin --profile <name> add github:DF-Guan/dsh-modalities
   name: dsh-modalities
   config:
     endpoint: 'https://api.example.com/v1'
-    apiKey: !!js process.env.MODALITY_API_KEY
+    apiKey: '${MODALITY_API_KEY}'
     providers: [intern-modalities]
 ```
 
 | 字段 | 含义 |
 |---|---|
 | `endpoint` | 网关的基础地址，就是那个能回答 `GET {endpoint}/v1/models` 的地址 |
-| `apiKey` | 该网关的 API 密钥。设到 `MODALITY_API_KEY` 环境变量里，不要把真实值提交到仓库 |
+| `apiKey` | 该网关的 API 密钥。设到 `MODALITY_API_KEY` 环境变量里，在配置里引用它，不要把真实值提交到仓库 |
 | `providers` | 这个适配器负责的路线名称。`intern-modalities` 就是书生·端砚那条路线 |
 
 适配器获取一次模型列表，缓存十分钟，期间所有请求都复用这份缓存——所以每十分钟一次网络请求，而不是每次生成都要请求。
