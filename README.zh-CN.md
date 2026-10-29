@@ -1,6 +1,6 @@
 # dsh-modalities
 
-你的模型明明写着能看图，DSH 却拒绝接收图片。这个插件修补两者之间的信息差。
+你的模型明明写着能看图，DSH 发现它时却没拿到这个信息。这个插件补上这段缺口。
 
 <div align="center">
 
@@ -15,8 +15,9 @@
 <h3 align="center">让能看图的模型真正收到图片</h3>
 
 <p align="center">
-  <a href="#问题出在哪">问题出在哪</a> ·
-  <a href="#怎么解决的">怎么解决的</a> ·
+  <a href="#你看到的">你看到的</a> ·
+  <a href="#缺口在哪">缺口在哪</a> ·
+  <a href="#它做了什么">它做了什么</a> ·
   <a href="#安装">安装</a> ·
   <a href="#配置">配置</a> ·
   <a href="#测试">测试</a> ·
@@ -30,35 +31,38 @@
 
 ---
 
-## 问题出在哪
+## 你看到的
 
 在书生·端砚的模型页面上，**Sage-A1.5**、**Intern-S2**、**Qwen3.8-27B** 这些模型的「输入类型」一栏写的是 `Text, Image` —— 它们能看图：
 
-![书生·端砚模型列表，注意"Input Type"一列的 Text, Image](art/model-list-screenshot.png)
+![书生·端砚模型列表，"Input Type"一列写着 Text, Image](art/model-list-screenshot.png)
 
-但 DSH 通过网关 API 发现这些模型时，读到的是它不认识的能力格式。网关返回的是这样：
+这张截图就是你实际会看到的页面。这张表是证据，不是装饰：这三行，以及每一个标着 `Multimodal` 的行，都声明了自己能接收图片。
+
+## 缺口在哪
+
+当 DSH 通过网关 API 发现这些模型时，它拿到的回包长这样。这是书生·端砚发现接口的真实记录回包（`_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json`，287 行，13 个模型）：
 
 ```json
 {
   "id": "Sage-A1.5",
   "input_modalities": [
-    { "type": "text" },
-    { "type": "image" }
+    { "type": "text", "supported_inputs": { "max_context_length": { "value": 524288, "unit": "token" } } },
+    { "type": "image", "supported_inputs": { "sources": { "type": "enum", "values": ["url", "base64"] } } }
   ]
 }
 ```
 
-DSH 期望的是一串简单的词：`["text", "image"]`。它读不懂 `{ "type": "image" }` 这种写法，于是判定这个模型**没有任何输入能力声明**，自动降级成纯文本模型。
+字段是存在的，而且声明了 `image`。问题只在于：**你跑的那个 DSH 版本，知不知道该怎么读这种写法。**
 
-结果就是：
+**这一部分我在这次会话里无法验证，我直接说清楚，不猜：** DSH 的安装副本打包在 `app.asar` 里，我没有办法读取它。所以我无法告诉你你用的 DSH 已经能处理这个、还是不能。我能指给你看的只有源码本身：
 
-```
-model "Sage-A1.5" does not declare image input
-```
+- `packages/llm/llm-pi-ai/src/discovery.ts` —— 里面的 `readListing()` 函数决定网关回包被转成什么。如果这个函数能读对象数组形状的 `input_modalities`，你的 DSH 就能处理；如果不能，这个字段会被丢弃，模型到达时没有任何输入能力声明。
+- 针对这个函数的一个等价修复已经放在 fork 分支上，讨论见 [deepseek-harness Discussion #8876](https://github.com/deepseek-ai/deepseek-harness/discussions/8876)。
 
-你的图片附件被拒绝了——而模型页面上明明白白写着它能看图。
+这个插件是另一种选择——适用于那个修复还没进你正在跑的版本的情况。
 
-## 怎么解决的
+## 它做了什么
 
 这个插件站在网关和 DSH 之间。它读取网关可能使用的任何一种能力声明格式，翻译成 DSH 能听懂的那串简单的词：
 
@@ -73,6 +77,8 @@ model "Sage-A1.5" does not declare image input
 
 - **不编造能力。** 如果网关说某个模型支持 `file`、`audio` 或 `video`，这些会被丢弃——DSH 本来也发不了这些类型，声明了就是骗人。
 - **不默认当纯文本。** 什么都没声明的模型保持"未知"，而不是静默降级成纯文本。你拿到的是诚实的"我不知道"，而不是一个错误的答案。
+
+这套逻辑跟核心修复用的是同一套——同样的四种写法、同样的词表、同样的"承载不了就丢弃"规则。区别只在于**它跑在哪里**：在适配器里面，而不是在 `discovery.ts` 里面。
 
 ## 安装
 
@@ -117,13 +123,13 @@ npm test
 | `tests/provider.spec.mjs` | 列表解析、缓存命中/未命中、未知模型报错、流式输出 | 15 |
 | `tests/sse.spec.mjs` | SSE 行解析、文本流、工具调用块 | 12 |
 
-`tests/fixtures/gateway.json` 里的测试数据是照着书生·端砚的真实返回格式写的。这些测试证明的是**真正的那个 bug 被修好了**，而不是一个编出来的例子。
+`tests/fixtures/gateway.json` 里的测试数据是照着书生·端砚的真实回包格式写的。这些测试证明的是**对象数组这个写法能跑通**——也就是这个插件存在要解决的那个情况。
 
 ## 这是什么，以及这不是什么
 
-**这是治标。** 真正的修复应该在 DSH 核心里（`packages/llm/llm-pi-ai/src/discovery.ts`），让它不管 `input_modalities` 写成什么形式都能读。一份等价的补丁已经做好，放在 fork 分支上，讨论见 [deepseek-harness Discussion #8876](https://github.com/deepseek-ai/deepseek-harness/discussions/8876)。
+**这是绕路，不是正解。** 这段逻辑本该放在 DSH 内部的 `packages/llm/llm-pi-ai/src/discovery.ts` 里，那样每条网关路线都不用装任何东西就能受益。一份等价的补丁已经做好，放在 fork 分支上，讨论见 [Discussion #8876](https://github.com/deepseek-ai/deepseek-harness/discussions/8876)。如果你的 DSH 版本落入了这个修复，这个插件就多余了——你应该把它卸掉，而不是两个同时跑。
 
-**这个插件适合这样的人：** 你想让图片附件今天就跑起来，等不了核心补丁落地。它是一个能用的适配器，不是概念验证——有测试、有缓存、有错误处理、有流式输出支持。
+**这个插件适合这样的人：** 你想让图片附件今天就跑起来，而你跑的 DSH 版本还不认识对象数组写法。它是一个能用的适配器，不是概念验证——有测试、有缓存、有错误处理、有流式输出支持。
 
 ## 进度
 
@@ -138,7 +144,7 @@ npm test
 <h2 align="center">🇬🇧 English version</h2>
 
 <p align="center">
-  Your model says it can read pictures. DSH says it can't. This plugin fixes the mismatch.
+  Your model says it can read pictures. DSH discovers it without that information. This plugin fills the gap.
 </p>
 
 <p align="center">

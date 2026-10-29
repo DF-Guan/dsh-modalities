@@ -1,6 +1,6 @@
 # dsh-modalities
 
-Your model says it can read pictures. DSH says it can't. This plugin fixes the mismatch.
+Your model says it can read pictures. DSH discovers it without that information. This plugin fills the gap.
 
 <div align="center">
 
@@ -15,8 +15,9 @@ Your model says it can read pictures. DSH says it can't. This plugin fixes the m
 <h3 align="center">Let models that accept images actually receive them</h3>
 
 <p align="center">
-  <a href="#the-problem">The problem</a> ·
-  <a href="#how-it-works">How it works</a> ·
+  <a href="#what-you-see">What you see</a> ·
+  <a href="#the-gap">The gap</a> ·
+  <a href="#what-it-does">What it does</a> ·
   <a href="#install">Install</a> ·
   <a href="#configure">Configure</a> ·
   <a href="#test">Test</a> ·
@@ -30,37 +31,40 @@ Your model says it can read pictures. DSH says it can't. This plugin fixes the m
 
 ---
 
-## The problem
+## What you see
 
 On the 书生·端砚 (intern) model page, models like **Sage-A1.5**, **Intern-S2** and **Qwen3.8-27B** are listed as `Text, Image` — they accept pictures:
 
-![书生·端砚 model list — note the "Text, Image" column](art/model-list-screenshot.png)
+![书生·端砚 model list — the "Input Type" column says Text, Image](art/model-list-screenshot.png)
 
-But when DSH discovers those same models through the gateway API, it reads their capabilities in a format it doesn't understand. The gateway reports:
+That screenshot is the page you'd see. The table is evidence, not decoration: those three rows, and every other `Multimodal` row, declare that they take images.
+
+## The gap
+
+When DSH discovers those same models through the gateway API, the reply it gets looks like this. This is a real recorded response from the 书生·端砚 discovery endpoint (`_pr/deepseek-harness/fixtures/model-listings/intern-2026-10-28.json`, 287 lines, 13 models):
 
 ```json
 {
   "id": "Sage-A1.5",
   "input_modalities": [
-    { "type": "text" },
-    { "type": "image" }
+    { "type": "text", "supported_inputs": { "max_context_length": { "value": 524288, "unit": "token" } } },
+    { "type": "image", "supported_inputs": { "sources": { "type": "enum", "values": ["url", "base64"] } } }
   ]
 }
 ```
 
-DSH expects a simple list of words — `["text", "image"]`. It doesn't know how to read the `{ "type": "image" }` form, so it concludes the model has **no declared input capability at all** and falls back to text-only.
+The field exists and it names `image`. The question is only whether the DSH version you run knows how to read that shape.
 
-The result:
+**This is the part I cannot verify from inside this session, and I'm saying it plainly rather than guessing:** DSH's installed copy is packaged inside `app.asar`, and I have no way to read it. So I cannot tell you whether your DSH already handles this or not. What I *can* point at is the source:
 
-```
-model "Sage-A1.5" does not declare image input
-```
+- `packages/llm/llm-pi-ai/src/discovery.ts` — the function `readListing()` decides what a gateway reply turns into. If that function reads `input_modalities` in the object-array shape, your DSH handles it. If it doesn't, the field is dropped and the model arrives with no declared input capability.
+- An equivalent fix for that function exists on a fork branch and is discussed in [deepseek-harness Discussion #8876](https://github.com/deepseek-ai/deepseek-harness/discussions/8876).
 
-Your image attachment gets rejected — even though the model page clearly says it handles images.
+This plugin is the alternative for the case where that fix isn't in the version you run.
 
-## How it works
+## What it does
 
-This plugin sits between the gateway and DSH. It reads the capability list in every format a gateway might use, and translates it into the simple list of words DSH understands:
+The plugin sits between the gateway and DSH. It reads the capability list in every format a gateway might use, and translates it into the simple list of words DSH understands:
 
 | What the gateway sends | What DSH receives |
 |---|---|
@@ -73,6 +77,8 @@ Two rules it follows:
 
 - **It never invents capabilities.** If a gateway says a model handles `file`, `audio` or `video`, those are dropped — DSH can't send them anyway, and claiming them would be a lie.
 - **It never defaults to text.** A model that declares nothing stays "unknown" rather than silently becoming text-only. You get an honest "I don't know" instead of a wrong answer.
+
+This is the same logic the core fix uses — same four spellings, same vocabulary, same "drop what you can't carry" rule. The difference is only *where* it runs: inside the adapter instead of inside `discovery.ts`.
 
 ## Install
 
@@ -117,13 +123,13 @@ npm test
 | `tests/provider.spec.mjs` | Listing resolution, cache hits/misses, unknown-model errors, streaming | 15 |
 | `tests/sse.spec.mjs` | SSE line parsing, text streaming, tool-call chunks | 12 |
 
-The fixture at `tests/fixtures/gateway.json` is a real-shaped 书生·端砚 reply, so the tests prove the actual bug is fixed — not just a made-up example.
+The fixture at `tests/fixtures/gateway.json` is shaped like the real 书生·端砚 reply, so the tests prove the object-array case works — the case this plugin exists to cover.
 
 ## What this is, and isn't
 
-**This fixes the symptom.** The real fix belongs in DSH core (`packages/llm/llm-pi-ai/src/discovery.ts`), which should read `input_modalities` no matter how it's spelled. An equivalent core patch is ready on a fork branch and discussed in [deepseek-harness Discussion #8876](https://github.com/deepseek-ai/deepseek-harness/discussions/8876).
+**This is a workaround, not the fix.** The proper place for this logic is `packages/llm/llm-pi-ai/src/discovery.ts` inside DSH, where every gateway route benefits without installing anything. An equivalent patch is ready on a fork branch, discussed at [Discussion #8876](https://github.com/deepseek-ai/deepseek-harness/discussions/8876). If that lands in your DSH version, this plugin becomes unnecessary — and you should remove it rather than run both.
 
-**This plugin is for you if** you want image attachments working today and can't wait for the core patch to land. It's a working adapter, not a proof-of-concept — it has tests, a cache, error handling and streaming support.
+**This plugin is for you if** you want image attachments working today and your DSH version doesn't yet read the object-array shape. It's a working adapter, not a proof-of-concept — it has tests, a cache, error handling and streaming support.
 
 ## Progress
 
@@ -138,7 +144,7 @@ The fixture at `tests/fixtures/gateway.json` is a real-shaped 书生·端砚 rep
 <h2 align="center">🇨🇳 中文说明</h2>
 
 <p align="center">
-  你的模型明明写着能看图，DSH 却拒绝接收图片。这个插件修补两者之间的信息差。
+  你的模型明明写着能看图，DSH 发现它时却没拿到这个信息。这个插件补上这段缺口。
 </p>
 
 <p align="center">
